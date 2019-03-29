@@ -1,4 +1,3 @@
-#!/usr/local/bin/python
 
 import argparse
 import logging
@@ -13,25 +12,32 @@ server_host = 'u1.bingo.ericsson.se'
 server_port = 13443
 client_req = b'POST HTTP/1.1\r\nHost: u1.bingo.ericsson.se:13443\r\nContent-Type: application/json\r\n\r\n[{"request-id":1001,"action-name":"getAuthentication","auth-type":"EAP-AKA","subscriber-id":"AgEAHwEwMTIzNDU2Nzg5MDEyMzAxQHByb3h5LmNvbQ==","token":"iseH6I0UUIvoo0WKhrqmvoyvn9HmzMGqXXO/lng/c9YsrNcW3gCFGhG8CMollD8cqaw3cBaeB7XUdlM9d29Lz2fXNhn0yGy31BIBheKF1F0DFqaumq2z2xhWAf8TzYuvZjRspgAoDdfDK5KGnMBYSa27ow9d9jyv+WdSfPu20T8=","unique-id":"ts186_oem"},{"request-id":1002,"action-name":"getSIMStatus","primary-iccid":"ts186_oem_iccid","subscription-query":{"iccid":"83749374947393749373947"}}]'
 
+ENCODING = 'utf-8'
+
 def build_request():
   path = '/entitlement'
-  encoding = 'utf-8'
 
-  headers = [
+
+  header = [
     'POST %s HTTP/1.1' % (path,),
     'Host: %s' % (server_host,),
     'User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/605.1.15',
-    'Charset: %s' % (encoding,),
+    'Charset: %s' % (ENCODING,),
     'Content-Type: application/json'
   ]
 
-  body = '[{"request-id":1,"action-name":"getAuthentication","auth-type":"EAP-AKA","subscriber-id":"Ag","token":"iH61"}]'
-  header = '\n'.join(headers)
+  body = [
+    '[{"request-id":1',
+    '"action-name":"getAuthentication"',
+    '"auth-type":"EAP-AKA"',
+    '"subscriber-id":"AgEAHwEwMTIzNDU2Nzg5MDEyMzAxQHByb3h5LmNvbQ=="',
+    '"token":"iseH6I0UUIvoo0WKhrqmvoyvn9HmzMGqXXO/lng/c9Y="}]'
+  ]
   
-  request = header + '\r\n\r\n' + body
-  return request.encode(encoding)
+  request = '\n'.join(header) + '\r\n\r\n' + ','.join(body)
+  return request.encode(ENCODING)
 
-def send_data(options=0):
+def connect(options=0):
   context = ssl.SSLContext(ssl.PROTOCOL_TLS)
   context.verify_mode = ssl.CERT_REQUIRED
   context.check_hostname = True
@@ -51,8 +57,8 @@ def send_data(options=0):
     sys.exit()
   except Exception as e:
     logger.error('Unexpected error:')
-    print sys.exc_info()[0]
-    print e
+    print(sys.exc_info()[0])
+    print(e)
     sys.exit()
   
   logger.info('SSL handshark succeed with server %s:%d' % (server_host, server_port))
@@ -60,14 +66,24 @@ def send_data(options=0):
   
   cert = conn.getpeercert()
   logger.debug('server certificate recieved: ' + json.dumps(cert))
+
+  return conn
+
+def client(options=0):
+  conn = connect(options)
   
   logger.debug('sending request')
   conn.sendall(build_request())
   logger.debug('request sent')
   
   data = conn.recv()
-  logger.info('response from server: %s' % (data,))
+  logger.info('response from server:\n%s' % (str(data, ENCODING),))
   logger.debug('all finished.')
+
+  conn.shutdown(socket.SHUT_RDWR)
+  conn.close()
+
+
 
 if __name__ == '__main__':
   # Default setting for logging.
@@ -116,4 +132,4 @@ if __name__ == '__main__':
     logger.info('set to SSLv3.0 only')
     options |= (ssl.OP_NO_SSLv2 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1 | ssl.OP_NO_TLSv1_2 | ssl.OP_NO_TLSv1_3)
 
-  send_data(options)
+  client(options)

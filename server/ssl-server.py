@@ -1,5 +1,3 @@
-#!/usr/local/bin/python
-
 import argparse
 import sys
 import logging
@@ -24,8 +22,20 @@ def deal_with_client(connstream):
     # finished with client
 
 def reply_client(conn, data):
-    logger.debug('recieved from client: %s' % (data,))
-    conn.sendall('pong')
+    encoding = 'utf-8'
+    header = [
+      'HTTP/1.1 200 OK',
+      'Content-Type: application/json'
+    ]
+    body = [
+      '{"response-id":1001',
+      '"status":6005}'
+    ]
+
+    response = '\n'.join(header) + '\r\n\r\n' + ','.join(body)
+
+    logger.debug('recieved from client:\n%s' % (str(data, 'utf-8'),))
+    conn.sendall(response.encode(encoding))
 
 def start_server(enable_ssl3_0):
   context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)

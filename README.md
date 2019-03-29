@@ -2,4 +2,4 @@
 
 ## Requirements
 * OpenSSL 1.1.1b
-* Python 2.7.16
+* Python 2.7.16 or Python 3.7.1
