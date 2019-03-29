@@ -41,7 +41,7 @@ def start_server(enable_ssl3_0):
   logger.debug('Bound to: %s:%d' % (HOST, PORT))
 
   bindsocket.listen(5)
-  logger.debug('Listening on: %s:%d' % (HOST, PORT))
+  logger.debug('Listening on: %s:%d\n' % (HOST, PORT))
 
   while True:
     newsocket, fromaddr = bindsocket.accept()

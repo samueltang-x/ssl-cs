@@ -11,6 +11,25 @@ import sys
 ca_file = 'ssl/ca-bingo-ca.pem'
 server_host = 'u1.bingo.ericsson.se'
 server_port = 13443
+client_req = b'POST HTTP/1.1\r\nHost: u1.bingo.ericsson.se:13443\r\nContent-Type: application/json\r\n\r\n[{"request-id":1001,"action-name":"getAuthentication","auth-type":"EAP-AKA","subscriber-id":"AgEAHwEwMTIzNDU2Nzg5MDEyMzAxQHByb3h5LmNvbQ==","token":"iseH6I0UUIvoo0WKhrqmvoyvn9HmzMGqXXO/lng/c9YsrNcW3gCFGhG8CMollD8cqaw3cBaeB7XUdlM9d29Lz2fXNhn0yGy31BIBheKF1F0DFqaumq2z2xhWAf8TzYuvZjRspgAoDdfDK5KGnMBYSa27ow9d9jyv+WdSfPu20T8=","unique-id":"ts186_oem"},{"request-id":1002,"action-name":"getSIMStatus","primary-iccid":"ts186_oem_iccid","subscription-query":{"iccid":"83749374947393749373947"}}]'
+
+def build_request():
+  path = '/entitlement'
+  encoding = 'utf-8'
+
+  headers = [
+    'POST %s HTTP/1.1' % (path,),
+    'Host: %s' % (server_host,),
+    'User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/605.1.15',
+    'Charset: %s' % (encoding,),
+    'Content-Type: application/json'
+  ]
+
+  body = '[{"request-id":1,"action-name":"getAuthentication","auth-type":"EAP-AKA","subscriber-id":"Ag","token":"iH61"}]'
+  header = '\n'.join(headers)
+  
+  request = header + '\r\n\r\n' + body
+  return request.encode(encoding)
 
 def send_data(options=0):
   context = ssl.SSLContext(ssl.PROTOCOL_TLS)
@@ -20,9 +39,13 @@ def send_data(options=0):
 
   context.options |= options
   
-  conn = context.wrap_socket(socket.socket(socket.AF_INET), server_hostname=server_host)
+  conn = context.wrap_socket(socket.socket(socket.AF_INET), server_hostname=server_host, do_handshake_on_connect=False)
+  logger.debug('check_hostname: %s' % (str(context.check_hostname),))
+
   try:
     conn.connect((server_host, server_port))
+    logger.info('tcp connected to %s:%d successfully.' % (server_host, server_port))
+    conn.do_handshake()
   except ssl.CertificateError as ce:
     logger.error('ssl certificate error:', ce)
     sys.exit()
@@ -32,14 +55,14 @@ def send_data(options=0):
     print e
     sys.exit()
   
-  logger.info('connected to %s:%d successfully.' % (server_host, server_port))
-  logger.info('ssl version used: %s' % (conn.version(),))
+  logger.info('SSL handshark succeed with server %s:%d' % (server_host, server_port))
+  logger.info('cipher: %s, version: %s, number of secret bits: %d' % conn.cipher())
   
   cert = conn.getpeercert()
   logger.debug('server certificate recieved: ' + json.dumps(cert))
   
   logger.debug('sending request')
-  conn.sendall('ping\n')
+  conn.sendall(build_request())
   logger.debug('request sent')
   
   data = conn.recv()
