@@ -10,6 +10,13 @@ HOST = 'u1.bingo.ericsson.se'
 server_cert = 'ssl/ses-exp-server-cert-20190326.pem'
 server_key = 'ssl/ses-exp-server-private.pem'
 
+VERSION_MAP = {
+  'tls1.0': ssl.TLSVersion.TLSv1,
+  'tls1.1': ssl.TLSVersion.TLSv1_1,
+  'tls1.2': ssl.TLSVersion.TLSv1_2,
+  'tls1.3': ssl.TLSVersion.TLSv1_3,
+}
+
 def deal_with_client(connstream):
     data = connstream.recv()
     # null data means the client is finished with us
@@ -34,28 +41,37 @@ def reply_client(conn, data):
 
     response = '\n'.join(header) + '\r\n\r\n' + ','.join(body)
 
-    logger.debug('recieved from client:\n%s' % (str(data, 'utf-8'),))
+    logger.info('recieved from client:\n%s' % (str(data, 'utf-8'),))
     conn.sendall(response.encode(encoding))
 
-def start_server(enable_ssl3_0):
+def start_server(args):
   context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
 
-  if enable_ssl3_0:
+  if args.ssl3_0:
+    logger.info('insecure SSLv3.0 enabled.')
     context.options &= ~ssl.OP_NO_SSLv3
+
+  if args.max_version:
+    logger.info('Set the highest supported tls version to: ' + args.max_version)
+    context.maximum_version = VERSION_MAP[args.max_version]
+
+  if args.min_version:
+    logger.info('Set the lowest supported tls version to: ' + args.min_version)
+    context.minimun_version = VERSION_MAP[args.min_version]
 
   context.load_cert_chain(certfile=server_cert, keyfile=server_key)
 
   bindsocket = socket.socket()
 
   bindsocket.bind((HOST, PORT))
-  logger.debug('Bound to: %s:%d' % (HOST, PORT))
+  logger.info('Bound to: %s:%d' % (HOST, PORT))
 
   bindsocket.listen(5)
-  logger.debug('Listening on: %s:%d\n' % (HOST, PORT))
+  logger.info('Listening on: %s:%d\n' % (HOST, PORT))
 
   while True:
     newsocket, fromaddr = bindsocket.accept()
-    logger.debug('accepted client socket: %s:%d' % fromaddr)
+    logger.info('accepted client tcp socket: %s:%d' % fromaddr)
 
     connstream = context.wrap_socket(newsocket, server_side=True)
     try:
@@ -76,7 +92,13 @@ if __name__ == '__main__':
     description='Description:\n\tssl/tls server for tests. (EXANTNG)')
     
   parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode.')
-  parser.add_argument('--enable-ssl3.0', action='store_true', dest='ssl3_0', help='enable SSLv3.0.')
+  parser.add_argument('--enable-ssl3.0', action='store_true', dest='ssl3_0', help='Enable SSLv3.0.')
+  parser.add_argument('-M', '--max-version', action='store', metavar='<version>',
+    choices=['tls1.3', 'tls1.2', 'tls1.1', 'tls1.0'],
+    help='Set the highest supported TLS version.\nAvailable values: tls1.3, tls1.2, tls1.1, tls1.0')
+  parser.add_argument('-m', '--min-version', action='store', metavar='<version>',
+    choices=['tls1.3', 'tls1.2', 'tls1.1', 'tls1.0'],
+    help='Set the lowest supported TLS version.\nAvailable values: tls1.3, tls1.2, tls1.1, tls1.0')
 
   args = parser.parse_args()
 
@@ -84,9 +106,4 @@ if __name__ == '__main__':
     logger.setLevel(logging.DEBUG)
     logger.debug('Debug mode enabled.')
 
-  enable_ssl3_0 = False
-  if args.ssl3_0:
-    logger.info('insecure SSLv3.0 enabled.')
-    enable_ssl3_0 = True
-
-  start_server(enable_ssl3_0)
+  start_server(args)

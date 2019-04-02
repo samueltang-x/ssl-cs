@@ -17,7 +17,6 @@ ENCODING = 'utf-8'
 def build_request():
   path = '/entitlement'
 
-
   header = [
     'POST %s HTTP/1.1' % (path,),
     'Host: %s' % (server_host,),
@@ -82,7 +81,6 @@ def client(options=0):
 
   conn.shutdown(socket.SHUT_RDWR)
   conn.close()
-
 
 
 if __name__ == '__main__':
