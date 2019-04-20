@@ -1,0 +1,12 @@
+{
+  "status": 200,
+  "header": [
+    "Content-Type: application/json"
+  ],
+  "body": [
+    {
+      "response-id": 1001,
+      "status": 6005
+    }
+  ]
+}

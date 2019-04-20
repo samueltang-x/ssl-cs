@@ -1,0 +1,16 @@
+{
+  "header": [
+    "Content-Type: application/json",
+    "Content-Encoding: gzip",
+    "User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 12_0 like Mac OS X) AppleWebKit/605.1.15"
+  ],
+  "body": [
+    {
+      "request-id": 1,
+      "action-name": "getAuthentication",
+      "auth-type": "EAP-AKA",
+      "subscriber-id": "AgEAHwEwMTIzNDU2Nzg5MDEyMzAxQHByb3h5LmNvbQ==",
+      "token": "iseH6I0UUIvoo0WKhrqmvoyvn9HmzMGqXXO/lng/c9Y="
+    }
+  ]
+}

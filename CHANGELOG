@@ -1,3 +1,10 @@
+## 0.3.0 (2019-04-20)
+* change client/server to request/response based on files provided
+* change client and server to read config from files
+* add support to set ciphers for both client and server
+* add PyInstaller spec files for distribution
+* add shell scripts for packaging
+
 ## 0.2.0 (2019-04-02)
 * add options to set the server supported highest and lowest versions
 
